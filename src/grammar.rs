@@ -765,11 +765,11 @@ peg::parser! {
         { cst!(dummy_inline_cmd_incomplete (s, e) []) }
 
         pub rule horizontal_escaped_char() -> Cst =
-            s:p() "\\" horizontal_special_char() e:p()
+            s:p() "\\" (" " / horizontal_special_char()) e:p()
         { cst!(horizontal_escaped_char (s, e) []) }
 
         rule horizontal_special_char() =
-            ['@' | '`' | '\\' | '{' | '}' | '%' | '|' | '*' | '$' | '#' | ';']
+            ['@' | '`' | '\\' | '{' | '}' | '%' | '|' | '*' | '$' | '#' | ';' ]
 
         pub rule horizontal_list() -> Cst =
             s:p() _ "|" inners:horizontal_list_inner()+ _ e:p()
