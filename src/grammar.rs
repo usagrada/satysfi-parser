@@ -55,6 +55,7 @@ peg::parser! {
         pub rule misc() -> Cst = DUMMY() { cst!(misc (0, 0) []) }
 
         /// comment
+        pub rule comments() -> Cst = s:p() comment() e:p() { cst!(comments (s, e) []) }
         rule comment() -> Span = "%" s:p() comment_inner() e:p() ['\r' | '\n'] { Span{ start: s, end: e } }
         rule comment_inner() = NON_LF()*
 

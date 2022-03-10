@@ -27,6 +27,7 @@ macro_rules! make_rule {
 // TODO: expand macro when all implementation has done
 make_rule! {
     misc,
+    comments,
 
     program_saty,
     program_satyh,
