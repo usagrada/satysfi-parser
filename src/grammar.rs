@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use crate::cst;
 use crate::types::rule::Rule;
 use crate::types::Span;
@@ -376,7 +378,7 @@ peg::parser! {
             / s:p() "(" _ p:pat_as() _ ")" e:p() { cst!(pattern (s, e) [p]) }
             / s:p() p:pat_tuple() e:p() { cst!(pattern (s, e) [p]) }
             / s:p() "_" e:p() { cst!(pattern (s, e) []) }
-            / s:p() v:var() e:p() { cst!(pattern (s, e) [v]) }
+            / s:p() "~"? v:var() e:p() { cst!(pattern (s, e) [v]) }
             / s:p() l:constant() e:p() { cst!(pattern (s, e) [l]) }
 
         pub rule pat_variant() -> Cst =
@@ -637,7 +639,7 @@ peg::parser! {
         rule length_unit() = ['a'..='z'] ['0'..='9' | 'a'..='z' | 'A' ..='Z' | '-']*
 
         pub rule const_string() -> Cst =
-            s:p() "#"? qs:string_quotes() (!string_inner(qs) [_])+ qe:string_quotes() "#"? e:p()
+            s:p() "@"? "#"? qs:string_quotes() (!string_inner(qs) [_])+ qe:string_quotes() "#"? e:p()
             {?
                 if qs == qe {
                     Ok(cst!(const_string (s, e) []))
@@ -658,7 +660,7 @@ peg::parser! {
         )
 
         pub rule inline_cmd_name() -> Cst =
-            s:p() r"\" inner:(mod_cmd_name() / cmd_name_ptn()) e:p()
+            s:p() r"\" inner:(mod_cmd_name() / cmd_name_ptn()) "@"? e:p()
         { cst!(inline_cmd_name (s, e) [inner]) }
 
         pub rule cmd_name_ptn() -> Cst =
@@ -674,12 +676,11 @@ peg::parser! {
         )
 
         pub rule block_cmd_name() -> Cst =
-            s:p() "+" inner:(mod_cmd_name() / cmd_name_ptn()) e:p()
+            s:p() "+" inner:(mod_cmd_name() / cmd_name_ptn()) "@"? e:p()
         { cst!(block_cmd_name (s, e) [inner]) }
 
         pub rule cmd_expr_arg() -> Cst =
             s:p() inner:cmd_expr_arg_inner() e:p() { cst!(cmd_expr_arg (s, e) [inner]) }
-            / s:p() "?*" e:p() { cst!(cmd_expr_arg (s, e) []) }
 
         pub rule cmd_expr_option() -> Cst =
             s:p() "?:" _ inner:cmd_expr_arg_inner() e:p() { cst!(cmd_expr_option (s, e) [inner]) }
@@ -689,7 +690,7 @@ peg::parser! {
             const_unit()
             / list()
             / record()
-            / "(" _ expr:expr() _ ")" { expr }
+            / "~"? "(" _ expr:expr() _ ")" { expr }
 
         pub rule cmd_text_arg() -> Cst =
             s:p()
@@ -766,11 +767,14 @@ peg::parser! {
         { cst!(dummy_inline_cmd_incomplete (s, e) []) }
 
         pub rule horizontal_escaped_char() -> Cst =
-            s:p() "\\" horizontal_special_char() e:p()
+            s:p() "\\" (horizontal_special_char() / horizontal_escapable()) e:p()
         { cst!(horizontal_escaped_char (s, e) []) }
 
         rule horizontal_special_char() =
             ['@' | '`' | '\\' | '{' | '}' | '%' | '|' | '*' | '$' | '#' | ';']
+
+        rule horizontal_escapable() =
+            ['[' | ']' | '(' | ')' | ' ']
 
         pub rule horizontal_list() -> Cst =
             s:p() _ "|" inners:horizontal_list_inner()+ _ e:p()
@@ -831,8 +835,10 @@ peg::parser! {
         rule math_group() -> Cst = "{" _ m:math_single() _ "}" {m} / math_unary()
 
         pub rule math_unary() -> Cst =
-            // TODO: allow unicode characters
-            s:p() ['A'..='Z' | 'a'..='z' | '0'..='9'] e:p() { cst!(math_unary (s, e) []) }
+            s:p() [^ '+' | '-' | '*' | '/' | ':' | '=' | '<' | '>' | '~' | '.' | ',' | '`' | '?' | ' ' |
+                    '\t' | '\n' | '\r' | '\\' | '{' | '}' | '%' | '|' | '$' | '#' | ';' | '\'' | '^' | '_' | '!' ] e:p() {
+                        cst!(math_unary (s, e) []) 
+            }
             / s:p() r"\" math_special_char() e:p() { cst!(math_unary (s, e) []) }
             / s:p() math_symbol() e:p() { cst!(math_unary (s, e) []) }
             / s:p() m:math_cmd() e:p() { cst!(math_unary (s, e) [m]) }
