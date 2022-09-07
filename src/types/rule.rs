@@ -96,6 +96,8 @@ make_rule! {
     bind_stmt,
     ctrl_while,
     ctrl_if,
+    ctrl_then,
+    ctrl_else,
     lambda,
     assignment,
     dyadic_expr,

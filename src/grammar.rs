@@ -439,8 +439,16 @@ peg::parser! {
         { cst!(ctrl_while (s, e) [cond, expr]) }
 
         pub rule ctrl_if() -> Cst =
-            s:p() kwd("if") _ cond:expr() _ kwd("then") _ et:expr() _ kwd("else") _ ee:expr() e:p()
+        s:p() kwd("if") _ cond:expr() _ et:ctrl_then() _  ee:ctrl_else() e:p()
         { cst!(ctrl_if (s, e) [cond, et, ee]) }
+
+        pub rule ctrl_then() -> Cst =
+            s:p() kwd("then") _ et:expr() _ e:p()
+        { cst!(ctrl_then (s, e) [et]) }
+
+        pub rule ctrl_else() -> Cst =
+            s:p() kwd("else") _ ee:expr() e:p()
+        { cst!(ctrl_else (s, e) [ee]) }
 
         pub rule lambda() -> Cst =
             s:p() kwd("fun") _ ptns:(pattern() ++ _) _ "->" _ expr: expr_inner_lambda() e:p()
@@ -837,7 +845,7 @@ peg::parser! {
         pub rule math_unary() -> Cst =
             s:p() [^ '+' | '-' | '*' | '/' | ':' | '=' | '<' | '>' | '~' | '.' | ',' | '`' | '?' | ' ' |
                     '\t' | '\n' | '\r' | '\\' | '{' | '}' | '%' | '|' | '$' | '#' | ';' | '\'' | '^' | '_' | '!' ] e:p() {
-                        cst!(math_unary (s, e) []) 
+                        cst!(math_unary (s, e) [])
             }
             / s:p() r"\" math_special_char() e:p() { cst!(math_unary (s, e) []) }
             / s:p() math_symbol() e:p() { cst!(math_unary (s, e) []) }
