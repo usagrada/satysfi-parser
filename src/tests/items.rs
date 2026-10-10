@@ -110,3 +110,21 @@ fn comment_span_is_exact() {
     assert_eq!(spans, vec![Span { start: 4, end: 7 }]);
     assert_eq!(c.cst.rule, Rule::list);
 }
+
+#[test]
+fn comment_at_end_of_file_without_newline() {
+    // ファイル末尾が改行のないコメントでもパースできる
+    let c = CstText::parse("let x = 1 % c", grammar::program).unwrap();
+    let mut comments = vec![];
+    fn walk(c: &CstText, node: &crate::Cst, out: &mut Vec<String>) {
+        for item in c.items(node) {
+            match item {
+                Item::Comment { span, .. } => out.push(c.get_text_from_span(span).to_string()),
+                Item::Node(n) => walk(c, n, out),
+                _ => {}
+            }
+        }
+    }
+    walk(&c, &c.cst, &mut comments);
+    assert_eq!(comments, vec!["% c".to_string()]);
+}

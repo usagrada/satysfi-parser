@@ -58,7 +58,7 @@ peg::parser! {
 
         /// comment
         pub rule comments() -> Cst = s:p() comment() e:p() { cst!(comments (s, e) []) }
-        rule comment() -> Span = "%" s:p() comment_inner() e:p() ['\r' | '\n'] { Span{ start: s, end: e } }
+        rule comment() -> Span = "%" s:p() comment_inner() e:p() (['\r' | '\n'] / EOF()) { Span{ start: s, end: e } }
         rule comment_inner() = NON_LF()*
 
         // §1. program
@@ -471,7 +471,7 @@ peg::parser! {
             s:p()
             t1:(unary_operator_expr() / application() / unary() / variant_constructor())
             _ op:bin_operator()
-            _ t2:(dyadic_expr() / application() / unary() / variant_constructor())
+            _ t2:(dyadic_expr() / unary_operator_expr() / application() / unary() / variant_constructor())
             e:p()
         { cst!(dyadic_expr (s, e) [t1, op, t2]) }
 

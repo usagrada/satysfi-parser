@@ -117,7 +117,12 @@ fn dyadic_expr() {
     assert_parsed!("foo bar +~ 3" dyadic_expr: ["foo bar" application: [_]; "+~" bin_operator: []; "3" unary: [_]; ]);
     assert_parsed!("foo bar -. foo baz" dyadic_expr: ["foo bar" application: [_]; "-." bin_operator: []; "foo baz" application: [_]; ]);
 
-    assert_not_parsed!("2 + - 3" dyadic_expr: [_]);
+    // 公式の parser.mly では nxop の右辺にも単項演算子 (EXACT_MINUS nxapp) を置ける
+    assert_parsed!("2 + - 3" dyadic_expr: [
+        "2" unary: [_];
+        "+" bin_operator: [];
+        "- 3" unary_operator_expr: [_];
+    ]);
 }
 
 #[test]
@@ -251,4 +256,23 @@ fn sequential_expr() {
     assert_not_parsed!("a before if x then b else c" sequential_expr: [_]);
     // 識別子の一部は予約語ではない
     assert_parsed!("before-x" expr: [_]);
+}
+
+#[test]
+fn dyadic_expr_with_unary_operator_on_the_right() {
+    assert_parsed!("1 + -2" dyadic_expr: [
+        "1" unary: [_];
+        "+" bin_operator: [];
+        "-2" unary_operator_expr: [
+            "-" unary_operator: [];
+            "2" unary: [_];
+        ];
+    ]);
+    assert_parsed!("a && not b" dyadic_expr: [_]);
+    // 右辺の単項演算子の後ろにさらに二項演算子が続く場合
+    assert_parsed!("a + -b + c" dyadic_expr: [
+        "a" unary: [_];
+        "+" bin_operator: [];
+        "-b + c" dyadic_expr: [_];
+    ]);
 }
