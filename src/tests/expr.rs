@@ -144,29 +144,36 @@ fn lambda() {
 
 #[test]
 fn ctrl_if() {
-    assert_parsed!("if x then y else z" ctrl_if: ["x" expr: [_]; "y" expr: [_]; "z" expr: [_]; ]);
+    // ctrl_then は後続の空白まで含む
+    assert_parsed!("if x then y else z" ctrl_if: [
+        "x" expr: [_];
+        "then y " ctrl_then: ["y" expr: [_];];
+        "else z" ctrl_else: ["z" expr: [_];];
+    ]);
     assert_parsed!("if if t then true else false then y else z" ctrl_if: [
         "if t then true else false" expr, ctrl_if: [
             "t" expr: [_];
-            "true" expr: [_];
-            "false" expr: [_];
+            "then true " ctrl_then: ["true" expr: [_];];
+            "else false" ctrl_else: ["false" expr: [_];];
         ];
-        "y" expr: [_];
-        "z" expr: [_];
+        "then y " ctrl_then: ["y" expr: [_];];
+        "else z" ctrl_else: ["z" expr: [_];];
     ]);
     assert_parsed!("if x then if foo bar then 1 + 2 else fun _ -> 1 else z" ctrl_if: [
         "x" expr: [_];
-        "if foo bar then 1 + 2 else fun _ -> 1" expr, ctrl_if: [
-            "foo bar" expr, application: [_];
-            "1 + 2" expr, dyadic_expr: [_];
-            "fun _ -> 1" expr, lambda: [_];
+        "then if foo bar then 1 + 2 else fun _ -> 1 " ctrl_then: [
+            "if foo bar then 1 + 2 else fun _ -> 1" expr, ctrl_if: [
+                "foo bar" expr, application: [_];
+                "then 1 + 2 " ctrl_then: ["1 + 2" expr, dyadic_expr: [_];];
+                "else fun _ -> 1" ctrl_else: ["fun _ -> 1" expr, lambda: [_];];
+            ];
         ];
-        "z" expr: [_];
+        "else z" ctrl_else: ["z" expr: [_];];
     ]);
     assert_parsed!("if x then foo else t <- 2 + 3" ctrl_if: [
         "x" expr: [_];
-        "foo" expr: [_];
-        "t <- 2 + 3" expr, assignment: [_];
+        "then foo " ctrl_then: ["foo" expr: [_];];
+        "else t <- 2 + 3" ctrl_else: ["t <- 2 + 3" expr, assignment: [_];];
     ]);
 }
 
