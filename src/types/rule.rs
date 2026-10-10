@@ -101,6 +101,7 @@ make_rule! {
     lambda,
     assignment,
     dyadic_expr,
+    sequential_expr,
     unary_operator_expr,
     unary_operator,
     application,
@@ -112,6 +113,11 @@ make_rule! {
     // unary
     unary,
     unary_prefix,
+    path,
+    path_line,
+    path_curve,
+    path_line_cycle,
+    path_curve_cycle,
     block_text,
     horizontal_text,
     math_text,
@@ -246,6 +252,12 @@ impl Rule {
             | Rule::lambda
             | Rule::assignment
             | Rule::dyadic_expr
+            | Rule::sequential_expr
+            | Rule::path
+            | Rule::path_line
+            | Rule::path_curve
+            | Rule::path_line_cycle
+            | Rule::path_curve_cycle
             | Rule::unary_operator_expr
             | Rule::unary_operator
             | Rule::application

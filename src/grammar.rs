@@ -400,16 +400,22 @@ peg::parser! {
                 / bind_stmt()
                 / ctrl_while()
                 / ctrl_if()
-                / lambda()
-                / assignment()
-                / dyadic_expr()
-                / unary_operator_expr()
-                / command_application()
-                / application()
-                / unary()
-                / variant_constructor()
+                / sequential_expr()
+                / expr_operand()
             ) e:p()
         { cst!(expr (s, e) [expr]) }
+
+        /// `before` の被演算子になれる式 (parser.mly の nxlambda に相当)
+        #[cache]
+        rule expr_operand() -> Cst =
+            lambda()
+            / assignment()
+            / dyadic_expr()
+            / unary_operator_expr()
+            / command_application()
+            / application()
+            / unary()
+            / variant_constructor()
 
         pub rule match_expr() -> Cst =
             s:p() kwd("match") _ expr:expr() _ kwd("with") _ "|"? _ arms:(match_arm() ** (_ "|" _)) e:p()
@@ -469,6 +475,15 @@ peg::parser! {
             e:p()
         { cst!(dyadic_expr (s, e) [t1, op, t2]) }
 
+        /// `e1 before e2` (右結合)
+        pub rule sequential_expr() -> Cst =
+            s:p()
+            t1:expr_operand()
+            _ kwd("before") _
+            t2:(sequential_expr() / expr_operand())
+            e:p()
+        { cst!(sequential_expr (s, e) [t1, t2]) }
+
         pub rule unary_operator_expr() -> Cst =
             s:p() op:unary_operator() _ expr:(application() / unary()) e:p()
         { cst!(unary_operator_expr (s, e) [op, expr]) }
@@ -510,6 +525,7 @@ peg::parser! {
             prefix:(p:unary_prefix() _ {p})?
             body:((
                 block_text()
+                / path()
                 / horizontal_text()
                 / math_text()
                 / record()
@@ -525,6 +541,30 @@ peg::parser! {
             ) ++ (_ "#" _))
             e:p()
         { cst!(unary (s, e) [prefix, body]) }
+
+        /// `<[ p0 -- p1 .. controls c1 and c2 .. p2 -- cycle ]>`
+        pub rule path() -> Cst =
+            s:p() "<[" _ start:unary() comps:(_ c:path_component() {c})* cyc:(_ c:path_cycle() {c})? _ "]>" e:p()
+        { cst!(path (s, e) [start, comps, cyc]) }
+
+        rule path_component() -> Cst = path_line() / path_curve()
+        rule path_cycle() -> Cst = path_line_cycle() / path_curve_cycle()
+
+        pub rule path_line() -> Cst =
+            s:p() "--" _ u:unary() e:p()
+        { cst!(path_line (s, e) [u]) }
+
+        pub rule path_curve() -> Cst =
+            s:p() ".." _ kwd("controls") _ c1:unary() _ kwd("and") _ c2:unary() _ ".." _ u:unary() e:p()
+        { cst!(path_curve (s, e) [c1, c2, u]) }
+
+        pub rule path_line_cycle() -> Cst =
+            s:p() "--" _ kwd("cycle") e:p()
+        { cst!(path_line_cycle (s, e) []) }
+
+        pub rule path_curve_cycle() -> Cst =
+            s:p() ".." _ kwd("controls") _ c1:unary() _ kwd("and") _ c2:unary() _ ".." _ kwd("cycle") e:p()
+        { cst!(path_curve_cycle (s, e) [c1, c2]) }
 
         pub rule unary_prefix() -> Cst = s:p() ("!" / "&" / "~") e:p() { cst!(unary_prefix (s, e) []) }
 

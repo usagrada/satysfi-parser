@@ -226,3 +226,29 @@ fn expr() {
     assert_parsed!("0pt" expr: [_]);
     assert_parsed!("(!toc-acc-ref) |> List.reverse |> List.fold-left" expr: [_]);
 }
+
+#[test]
+fn sequential_expr() {
+    assert_parsed!("a before b" sequential_expr: [
+        "a" unary, var: [];
+        "b" unary, var: [];
+    ]);
+    // 右結合
+    assert_parsed!("a <- 1 before b <- 2 before c" sequential_expr: [
+        "a <- 1" assignment: [_];
+        "b <- 2 before c" sequential_expr: [
+            "b <- 2" assignment: [_];
+            "c" unary, var: [];
+        ];
+    ]);
+    assert_parsed!("print 1 before print 2" expr, sequential_expr: [
+        "print 1" application: [_];
+        "print 2" application: [_];
+    ]);
+    // if の else 節は before を飲み込む
+    assert_parsed!("if x then a else b before c" expr, ctrl_if: [_]);
+    // before の後に if は直接置けない
+    assert_not_parsed!("a before if x then b else c" sequential_expr: [_]);
+    // 識別子の一部は予約語ではない
+    assert_parsed!("before-x" expr: [_]);
+}
