@@ -330,6 +330,26 @@ impl Rule {
         Some(mode)
     }
 
+    /// `%` を文字として含みうる葉の rule。
+    /// これらの内部の `%` はコメントではない。
+    pub fn is_token_with_percent(&self) -> bool {
+        matches!(
+            self,
+            Rule::const_string
+                | Rule::regular_text
+                | Rule::pkgname
+                | Rule::horizontal_escaped_char
+                | Rule::math_unary
+                | Rule::comments
+                | Rule::dummy_header
+                | Rule::dummy_stmt
+                | Rule::dummy_sig_stmt
+                | Rule::dummy_inline_cmd_incomplete
+                | Rule::dummy_block_cmd_incomplete
+                | Rule::dummy_modvar_incomplete
+        )
+    }
+
     pub fn is_error(&self) -> bool {
         self.error_description().is_some()
     }
