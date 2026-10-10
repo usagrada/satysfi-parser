@@ -93,7 +93,7 @@ peg::parser! {
         { cst!(stage (s, e) []) }
 
         pub rule headers() -> Cst =
-            s:p() v:(h: header() _ {h})* e:p()
+            s:p() v:(header() ** _) e:p()
         { cst!(headers (s, e) [v]) }
 
         rule header() -> Cst = header_require() / header_import() / dummy_header()
