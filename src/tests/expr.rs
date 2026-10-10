@@ -112,7 +112,7 @@ fn dyadic_expr() {
     ]);
     assert_parsed!("-2 + 3" dyadic_expr: ["-2" unary_operator_expr: [_]; "+" bin_operator: []; "3" unary: [_]; ]);
 
-    assert_parsed!("None +~ 3" dyadic_expr: ["None " variant_constructor: [_]; "+~" bin_operator: []; "3" unary: [_]; ]);
+    assert_parsed!("None +~ 3" dyadic_expr: ["None" variant_constructor: [_]; "+~" bin_operator: []; "3" unary: [_]; ]);
     assert_parsed!("Some(2) +~ 3" dyadic_expr: ["Some(2)" variant_constructor: [_]; "+~" bin_operator: []; "3" unary: [_]; ]);
     assert_parsed!("foo bar +~ 3" dyadic_expr: ["foo bar" application: [_]; "+~" bin_operator: []; "3" unary: [_]; ]);
     assert_parsed!("foo bar -. foo baz" dyadic_expr: ["foo bar" application: [_]; "-." bin_operator: []; "foo baz" application: [_]; ]);
@@ -147,24 +147,24 @@ fn ctrl_if() {
     // ctrl_then は後続の空白まで含む
     assert_parsed!("if x then y else z" ctrl_if: [
         "x" expr: [_];
-        "then y " ctrl_then: ["y" expr: [_];];
+        "then y" ctrl_then: ["y" expr: [_];];
         "else z" ctrl_else: ["z" expr: [_];];
     ]);
     assert_parsed!("if if t then true else false then y else z" ctrl_if: [
         "if t then true else false" expr, ctrl_if: [
             "t" expr: [_];
-            "then true " ctrl_then: ["true" expr: [_];];
+            "then true" ctrl_then: ["true" expr: [_];];
             "else false" ctrl_else: ["false" expr: [_];];
         ];
-        "then y " ctrl_then: ["y" expr: [_];];
+        "then y" ctrl_then: ["y" expr: [_];];
         "else z" ctrl_else: ["z" expr: [_];];
     ]);
     assert_parsed!("if x then if foo bar then 1 + 2 else fun _ -> 1 else z" ctrl_if: [
         "x" expr: [_];
-        "then if foo bar then 1 + 2 else fun _ -> 1 " ctrl_then: [
+        "then if foo bar then 1 + 2 else fun _ -> 1" ctrl_then: [
             "if foo bar then 1 + 2 else fun _ -> 1" expr, ctrl_if: [
                 "foo bar" expr, application: [_];
-                "then 1 + 2 " ctrl_then: ["1 + 2" expr, dyadic_expr: [_];];
+                "then 1 + 2" ctrl_then: ["1 + 2" expr, dyadic_expr: [_];];
                 "else fun _ -> 1" ctrl_else: ["fun _ -> 1" expr, lambda: [_];];
             ];
         ];
@@ -172,7 +172,7 @@ fn ctrl_if() {
     ]);
     assert_parsed!("if x then foo else t <- 2 + 3" ctrl_if: [
         "x" expr: [_];
-        "then foo " ctrl_then: ["foo" expr: [_];];
+        "then foo" ctrl_then: ["foo" expr: [_];];
         "else t <- 2 + 3" ctrl_else: ["t <- 2 + 3" expr, assignment: [_];];
     ]);
 }
@@ -188,7 +188,7 @@ fn ctrl_while() {
 #[test]
 fn bind_stmt() {
     assert_parsed!("let x = 1 in x" bind_stmt: ["let x = 1" let_stmt: [_]; "x" expr: [_]; ]);
-    assert_parsed!("let-rec aux x = x in aux" bind_stmt: ["let-rec aux x = x " let_rec_stmt: [_]; "aux" expr: [_]; ]);
+    assert_parsed!("let-rec aux x = x in aux" bind_stmt: ["let-rec aux x = x" let_rec_stmt: [_]; "aux" expr: [_]; ]);
     assert_parsed!(r"let-math \foo x = ${ab#x} in ${\foo{c}}" bind_stmt: [
         r"let-math \foo x = ${ab#x}" let_math_stmt: [_];
         r"${\foo{c}}" expr: [_];

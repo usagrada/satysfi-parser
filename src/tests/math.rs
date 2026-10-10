@@ -58,7 +58,7 @@ fn math_single() {
     ]);
     assert_parsed!(r"\alpha\beta c" math_single: [
         r"\alpha" math_token, math_unary, math_cmd: [_];
-        r"\beta " math_token, math_unary, math_cmd: [_];
+        r"\beta" math_token, math_unary, math_cmd: [_];
         "c" math_token, math_unary: [];
     ]);
 }
