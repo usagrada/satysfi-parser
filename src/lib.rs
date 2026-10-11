@@ -3,7 +3,7 @@ mod types;
 
 pub use types::rule::{Mode, Rule};
 pub use types::structure;
-pub use types::{Cst, CstText, LineCol, Span};
+pub use types::{Cst, CstText, Item, LineCol, Span};
 
 #[cfg(test)]
 mod tests;

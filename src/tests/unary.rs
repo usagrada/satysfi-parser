@@ -231,3 +231,34 @@ fn unary() {
     // TODO: Original SATySFi parser doesn't allow "(|>)" as binary operator
     // assert_not_parsed!("(|>)" unary: [_]);
 }
+
+#[test]
+fn path() {
+    assert_parsed!("<[ (0pt, 0pt) -- (1pt, 1pt) ]>" path: [
+        "(0pt, 0pt)" unary, tuple: [_];
+        "-- (1pt, 1pt)" path_line: ["(1pt, 1pt)" unary, tuple: [_];];
+    ]);
+    assert_parsed!("<[ p0 -- p1 -- cycle ]>" path: [
+        "p0" unary, var: [];
+        "-- p1" path_line: ["p1" unary, var: [];];
+        "-- cycle" path_line_cycle: [];
+    ]);
+    assert_parsed!("<[ p0 .. controls c1 and c2 .. p1 ]>" path: [
+        "p0" unary, var: [];
+        ".. controls c1 and c2 .. p1" path_curve: [
+            "c1" unary, var: [];
+            "c2" unary, var: [];
+            "p1" unary, var: [];
+        ];
+    ]);
+    assert_parsed!("<[ p0 .. controls c1 and c2 .. cycle ]>" path: [
+        "p0" unary, var: [];
+        ".. controls c1 and c2 .. cycle" path_curve_cycle: [
+            "c1" unary, var: [];
+            "c2" unary, var: [];
+        ];
+    ]);
+    assert_parsed!("<[ p0 ]>" path: ["p0" unary, var: [];]);
+    assert_parsed!("<[ p0 -- p1 ]>" unary, path: [_]);
+    assert_not_parsed!("<[ ]>" path: [_]);
+}

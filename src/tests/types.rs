@@ -24,7 +24,7 @@ fn type_record_unit() {
 
 #[test]
 fn type_record() {
-    assert_parsed!("(| foo: int |)" type_record: [ "foo: int " type_record_unit: [_]; ]);
+    assert_parsed!("(| foo: int |)" type_record: [ "foo: int" type_record_unit: [_]; ]);
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn type_application() {
 #[test]
 fn type_list_unit_optional() {
     assert_parsed!("int?" type_list_unit_optional: ["int" type_prod: [_]; ]);
-    assert_parsed!("int * int ?" type_list_unit_optional: ["int * int " type_prod: [_]; ]);
+    assert_parsed!("int * int ?" type_list_unit_optional: ["int * int" type_prod: [_]; ]);
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn type_prod() {
     ]);
 
     assert_parsed!("int * int" type_prod: [
-        "int " type_application: [_];
+        "int" type_application: [_];
         "int" type_application: [_];
     ]);
 }

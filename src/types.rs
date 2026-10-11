@@ -87,6 +87,18 @@ pub struct LineCol {
     pub column: usize,
 }
 
+/// [`CstText::items`] が返す要素。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Item<'a> {
+    /// 子ノード。
+    Node(&'a Cst),
+    /// コメント。`span` は `%` から行末 (改行を除く) まで。
+    /// `own_line` はそのコメントが行頭 (空白を除く) から始まるとき true。
+    Comment { span: Span, own_line: bool },
+    /// 空行。値は連続する空行の数。
+    BlankLines(usize),
+}
+
 /// CST にテキストの情報を付加したもの。
 // TODO: 自己参照構造体にする。
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -137,6 +149,68 @@ impl CstText {
         let text = self.text.as_str();
         let Span { start, end } = cst.span;
         &text[start..end]
+    }
+
+    /// `node` の子要素と、子要素の隙間にある trivia (コメント・空行) を位置順に並べて返す。
+    ///
+    /// 子が覆っていない範囲に現れる `%` は必ずコメントである
+    /// (文字列・水平モードの文字・`\%` などは子ノードが覆っているため)。
+    /// そのため、コメントの位置を木構造の上で正確に決定できる。
+    pub fn items<'a>(&self, node: &'a Cst) -> Vec<Item<'a>> {
+        if node.inner.is_empty() && node.rule.is_token_with_percent() {
+            return vec![];
+        }
+        let mut items = vec![];
+        let mut cursor = node.span.start;
+        for child in &node.inner {
+            self.scan_gap(cursor, child.span.start, &mut items);
+            items.push(Item::Node(child));
+            cursor = child.span.end;
+        }
+        self.scan_gap(cursor, node.span.end, &mut items);
+        items
+    }
+
+    fn scan_gap<'a>(&self, start: usize, end: usize, items: &mut Vec<Item<'a>>) {
+        let text = self.text.as_str();
+        // 空白の連続に含まれる改行の数。2 以上なら空行がある。
+        let mut newlines = 0;
+        let flush = |newlines: usize, items: &mut Vec<Item<'a>>| {
+            if newlines >= 2 {
+                items.push(Item::BlankLines(newlines - 1));
+            }
+        };
+        let mut i = start;
+        while i < end {
+            let ch = text[i..].chars().next().unwrap();
+            if ch == '%' {
+                flush(newlines, items);
+                newlines = 0;
+                let eol = text[i..end].find('\n').map_or(end, |k| i + k);
+                let comment_end = i + text[i..eol].trim_end().len();
+                let line_start = text[..i].rfind('\n').map_or(0, |k| k + 1);
+                let own_line = text[line_start..i].chars().all(char::is_whitespace);
+                items.push(Item::Comment {
+                    span: Span {
+                        start: i,
+                        end: comment_end,
+                    },
+                    own_line,
+                });
+                i = eol;
+            } else if ch == '\n' {
+                newlines += 1;
+                i += 1;
+            } else if ch.is_whitespace() {
+                i += ch.len_utf8();
+            } else {
+                // `let` や `=` などの記号・キーワード
+                flush(newlines, items);
+                newlines = 0;
+                i += ch.len_utf8();
+            }
+        }
+        flush(newlines, items);
     }
 
     /// 与えられた position の line 及び col を出力する。

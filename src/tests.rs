@@ -7,6 +7,8 @@ use crate::types::rule::Rule;
 use crate::{assert_not_parsed, assert_parsed, comp_cst, cst_inner};
 
 mod commands;
+mod invariant;
+mod items;
 mod constant;
 mod expr;
 mod header;
@@ -62,6 +64,18 @@ impl CompCstText {
                 branch,
             });
         }
+        // trivia (空白・コメント) は span に含めない。
+        // 水平モードの空白は内容なので例外とする。
+        if !rule_allows_surrounding_space(cst.rule) {
+            let t = cst.as_str(&text);
+            if t.starts_with(char::is_whitespace) || t.ends_with(char::is_whitespace) {
+                return Err(CstParseError::SurroundingSpace {
+                    text: t.to_owned(),
+                    rule: cst.rule,
+                    branch,
+                });
+            }
+        }
         if self.inner.is_none() {
             return Ok(());
         }
@@ -100,8 +114,37 @@ impl CompCstText {
     }
 }
 
+/// span の前後に空白を含んでよい rule
+fn rule_allows_surrounding_space(rule: Rule) -> bool {
+    matches!(
+        rule,
+        // 水平モードの空白は内容の一部
+        Rule::horizontal_single
+            | Rule::horizontal_list
+            | Rule::horizontal_bullet
+            | Rule::horizontal_bullet_list
+            | Rule::regular_text
+            // ファイル全体・ヘッダは行単位
+            | Rule::program_saty
+            | Rule::program_satyh
+            | Rule::headers
+            | Rule::header_require
+            | Rule::header_import
+            | Rule::dummy_header
+            | Rule::pkgname
+            | Rule::stage
+    )
+}
+
 #[derive(Debug, Error)]
 pub enum CstParseError {
+    /// span の前後に空白がある
+    #[error("Span of {:?} has surrounding whitespace at {}: {:?}", .rule, .branch, .text)]
+    SurroundingSpace {
+        text: String,
+        rule: Rule,
+        branch: CstBranchSequence,
+    },
     /// parse に失敗した
     #[error("Failed to Parse: {:?}", .0)]
     ParseFailed(peg::error::ParseError<LineCol>),
